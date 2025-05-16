@@ -3,9 +3,10 @@ package com.androiddevs.runningappyt.ui.fragments
 import android.Manifest
 import android.os.Build
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.AdapterView
-import android.widget.LinearLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
@@ -13,40 +14,62 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.androiddevs.runningappyt.R
 import com.androiddevs.runningappyt.adapters.RunAdapter
+import com.androiddevs.runningappyt.databinding.FragmentRunBinding
 import com.androiddevs.runningappyt.other.Constants.REQUEST_CODE_LOCATION_PERMISSION
 import com.androiddevs.runningappyt.other.SortType
 import com.androiddevs.runningappyt.other.TrackingUtility
 import com.androiddevs.runningappyt.ui.viewmodels.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.android.synthetic.main.fragment_run.*
 import pub.devrel.easypermissions.AppSettingsDialog
 import pub.devrel.easypermissions.EasyPermissions
 
 @AndroidEntryPoint
 class RunFragment : Fragment(R.layout.fragment_run), EasyPermissions.PermissionCallbacks {
 
-    private val viewModel: MainViewModel by viewModels()
+    private var _binding: FragmentRunBinding? = null
+
+    // This property is only valid between onCreateView and
+    // onDestroyView.
+    private val binding get() = _binding!!
 
     private lateinit var runAdapter: RunAdapter
+
+    val viewModel: MainViewModel by viewModels()
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = FragmentRunBinding.inflate(inflater, container, false)
+        val root: View = binding.root
+
+        return root
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         requestPermissions()
         setupRecyclerView()
 
-        when(viewModel.sortType) {
-            SortType.DATE -> spFilter.setSelection(0)
-            SortType.RUNNING_TIME -> spFilter.setSelection(1)
-            SortType.DISTANCE -> spFilter.setSelection(2)
-            SortType.AVG_SPEED -> spFilter.setSelection(3)
-            SortType.CALORIES_BURNED -> spFilter.setSelection(4)
+        when (viewModel.sortType) {
+            SortType.DATE -> binding.spFilter.setSelection(0)
+            SortType.RUNNING_TIME -> binding.spFilter.setSelection(1)
+            SortType.DISTANCE -> binding.spFilter.setSelection(2)
+            SortType.AVG_SPEED -> binding.spFilter.setSelection(3)
+            SortType.CALORIES_BURNED -> binding.spFilter.setSelection(4)
         }
 
-        spFilter.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+        binding.spFilter.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(p0: AdapterView<*>?) {}
 
-            override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, pos: Int, id: Long) {
-                when(pos) {
+            override fun onItemSelected(
+                adapterView: AdapterView<*>?,
+                view: View?,
+                pos: Int,
+                id: Long
+            ) {
+                when (pos) {
                     0 -> viewModel.sortRuns(SortType.DATE)
                     1 -> viewModel.sortRuns(SortType.RUNNING_TIME)
                     2 -> viewModel.sortRuns(SortType.DISTANCE)
@@ -60,22 +83,27 @@ class RunFragment : Fragment(R.layout.fragment_run), EasyPermissions.PermissionC
             runAdapter.submitList(it)
         })
 
-        fab.setOnClickListener {
+        binding.fab.setOnClickListener {
             findNavController().navigate(R.id.action_runFragment_to_trackingFragment)
         }
     }
 
-    private fun setupRecyclerView() = rvRuns.apply {
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+
+    private fun setupRecyclerView() = binding.rvRuns.apply {
         runAdapter = RunAdapter()
         adapter = runAdapter
         layoutManager = LinearLayoutManager(requireContext())
     }
 
     private fun requestPermissions() {
-        if(TrackingUtility.hasLocationPermissions(requireContext())) {
+        if (TrackingUtility.hasLocationPermissions(requireContext())) {
             return
         }
-        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             EasyPermissions.requestPermissions(
                 this,
                 "You need to accept location permissions to use this app.",
@@ -95,15 +123,16 @@ class RunFragment : Fragment(R.layout.fragment_run), EasyPermissions.PermissionC
         }
     }
 
-    override fun onPermissionsDenied(requestCode: Int, perms: MutableList<String>) {
-        if(EasyPermissions.somePermissionPermanentlyDenied(this, perms)) {
-            AppSettingsDialog.Builder(this).build().show()
-        } else {
-            requestPermissions()
-        }
+    override fun onPermissionsGranted(requestCode: Int, perms: MutableList<String>) {
     }
 
-    override fun onPermissionsGranted(requestCode: Int, perms: MutableList<String>) {}
+    override fun onPermissionsDenied(requestCode: Int, perms: MutableList<String>) {
+        if (EasyPermissions.somePermissionPermanentlyDenied(this, perms)) {
+            AppSettingsDialog.Builder(this).build().show()
+        } else {
+            requestPermissions(perms.toTypedArray(), requestCode)
+        }
+    }
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
@@ -114,8 +143,6 @@ class RunFragment : Fragment(R.layout.fragment_run), EasyPermissions.PermissionC
         EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this)
     }
 }
-
-
 
 
 

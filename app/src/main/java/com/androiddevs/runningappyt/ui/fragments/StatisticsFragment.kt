@@ -2,12 +2,15 @@ package com.androiddevs.runningappyt.ui.fragments
 
 import android.graphics.Color
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import com.androiddevs.runningappyt.R
+import com.androiddevs.runningappyt.databinding.FragmentStatisticsBinding
 import com.androiddevs.runningappyt.other.CustomMarkerView
 import com.androiddevs.runningappyt.other.TrackingUtility
 import com.androiddevs.runningappyt.ui.viewmodels.MainViewModel
@@ -17,39 +20,60 @@ import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
 import com.github.mikephil.charting.data.BarEntry
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.android.synthetic.main.fragment_statistics.*
 import kotlin.math.round
 
 @AndroidEntryPoint
-class StatisticsFragment : Fragment(R.layout.fragment_statistics) {
+class StatisticsFragment : Fragment() {
 
     private val viewModel: StatisticsViewModel by viewModels()
 
+    private var _binding: FragmentStatisticsBinding? = null
+
+    // This property is only valid between onCreateView and
+    // onDestroyView.
+    private val binding get() = _binding!!
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = FragmentStatisticsBinding.inflate(inflater, container, false)
+        val root: View = binding.root
+
+        return root
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        subscribeToObservers()
         setupBarChart()
+        subscribeToObservers()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     private fun setupBarChart() {
-        barChart.xAxis.apply {
+        binding.barChart.xAxis.apply {
             position = XAxis.XAxisPosition.BOTTOM
             setDrawLabels(false)
             axisLineColor = Color.WHITE
             textColor = Color.WHITE
             setDrawGridLines(false)
         }
-        barChart.axisLeft.apply {
+        binding.barChart.axisLeft.apply {
             axisLineColor = Color.WHITE
             textColor = Color.WHITE
             setDrawGridLines(false)
         }
-        barChart.axisRight.apply {
+        binding.barChart.axisRight.apply {
             axisLineColor = Color.WHITE
             textColor = Color.WHITE
             setDrawGridLines(false)
         }
-        barChart.apply {
+        binding.barChart.apply {
             description.text = "Avg Speed Over Time"
             legend.isEnabled = false
         }
@@ -59,7 +83,7 @@ class StatisticsFragment : Fragment(R.layout.fragment_statistics) {
         viewModel.totalTimeRun.observe(viewLifecycleOwner, Observer {
             it?.let {
                 val totalTimeRun = TrackingUtility.getFormattedStopWatchTime(it)
-                tvTotalTime.text = totalTimeRun
+                binding.tvTotalTime.text = totalTimeRun
             }
         })
         viewModel.totalDistance.observe(viewLifecycleOwner, Observer {
@@ -67,20 +91,20 @@ class StatisticsFragment : Fragment(R.layout.fragment_statistics) {
                 val km = it / 1000f
                 val totalDistance = round(km * 10f) / 10f
                 val totalDistanceString = "${totalDistance}km"
-                tvTotalDistance.text = totalDistanceString
+                binding.tvTotalDistance.text = totalDistanceString
             }
         })
         viewModel.totalAvgSpeed.observe(viewLifecycleOwner, Observer {
             it?.let {
                 val avgSpeed = round(it * 10f) / 10f
                 val avgSpeedString = "${avgSpeed}km/h"
-                tvAverageSpeed.text = avgSpeedString
+                binding.tvAverageSpeed.text = avgSpeedString
             }
         })
         viewModel.totalCaloriesBurned.observe(viewLifecycleOwner, Observer {
             it?.let {
                 val totalCalories = "${it}kcal"
-                tvTotalCalories.text = totalCalories
+                binding.tvTotalCalories.text = totalCalories
             }
         })
         viewModel.runsSortedByDate.observe(viewLifecycleOwner, Observer {
@@ -90,25 +114,11 @@ class StatisticsFragment : Fragment(R.layout.fragment_statistics) {
                     valueTextColor = Color.WHITE
                     color = ContextCompat.getColor(requireContext(), R.color.colorAccent)
                 }
-                barChart.data = BarData(bardataSet)
-                barChart.marker = CustomMarkerView(it.reversed(), requireContext(), R.layout.marker_view)
-                barChart.invalidate()
+                binding.barChart.data = BarData(bardataSet)
+                binding.barChart.marker = CustomMarkerView(it.reversed(), requireContext())
+                binding.barChart.invalidate()
             }
         })
     }
+
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -108,10 +108,12 @@ class TrackingService : LifecycleService() {
                         startTimer()
                     }
                 }
+
                 ACTION_PAUSE_SERVICE -> {
                     Timber.d("Paused service")
                     pauseService()
                 }
+
                 ACTION_STOP_SERVICE -> {
                     Timber.d("Stopped service")
                     killService()
@@ -154,26 +156,27 @@ class TrackingService : LifecycleService() {
     }
 
     private fun updateNotificationTrackingState(isTracking: Boolean) {
-        val notificationActionText = if(isTracking) "Pause" else "Resume"
-        val pendingIntent = if(isTracking) {
+        val notificationActionText = if (isTracking) "Pause" else "Resume"
+        val pendingIntent = if (isTracking) {
             val pauseIntent = Intent(this, TrackingService::class.java).apply {
                 action = ACTION_PAUSE_SERVICE
             }
-            PendingIntent.getService(this, 1, pauseIntent, FLAG_UPDATE_CURRENT)
+            PendingIntent.getService(this, 1, pauseIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         } else {
             val resumeIntent = Intent(this, TrackingService::class.java).apply {
                 action = ACTION_START_OR_RESUME_SERVICE
             }
-            PendingIntent.getService(this, 2, resumeIntent, FLAG_UPDATE_CURRENT)
+            PendingIntent.getService(this, 2, resumeIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         }
 
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager =
+            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         curNotificationBuilder.javaClass.getDeclaredField("mActions").apply {
             isAccessible = true
             set(curNotificationBuilder, ArrayList<NotificationCompat.Action>())
         }
-        if(!serviceKilled) {
+        if (!serviceKilled) {
             curNotificationBuilder = baseNotificationBuilder
                 .addAction(R.drawable.ic_pause_black_24dp, notificationActionText, pendingIntent)
             notificationManager.notify(NOTIFICATION_ID, curNotificationBuilder.build())
@@ -186,8 +189,9 @@ class TrackingService : LifecycleService() {
             if (TrackingUtility.hasLocationPermissions(this)) {
                 val request = LocationRequest().apply {
                     interval = LOCATION_UPDATE_INTERVAL
-                    fastestInterval = FASTEST_LOCATION_INTERVAL
-                    priority = PRIORITY_HIGH_ACCURACY
+                    fastestInterval =
+                        FASTEST_LOCATION_INTERVAL
+                    priority = LocationRequest.PRIORITY_HIGH_ACCURACY
                 }
                 fusedLocationProviderClient.requestLocationUpdates(
                     request,
@@ -201,10 +205,10 @@ class TrackingService : LifecycleService() {
     }
 
     val locationCallback = object : LocationCallback() {
-        override fun onLocationResult(result: LocationResult?) {
+        override fun onLocationResult(result: LocationResult) {
             super.onLocationResult(result)
             if (isTracking.value!!) {
-                result?.locations?.let { locations ->
+                result.locations.let { locations ->
                     for (location in locations) {
                         addPathPoint(location)
                         Timber.d("NEW LOCATION: ${location.latitude}, ${location.longitude}")
@@ -212,11 +216,13 @@ class TrackingService : LifecycleService() {
                 }
             }
         }
+
     }
 
     private fun addPathPoint(location: Location?) {
         location?.let {
-            val pos = LatLng(location.latitude, location.longitude)
+            val pos =
+                com.google.android.gms.maps.model.LatLng(location.latitude, location.longitude)
             pathPoints.value?.apply {
                 last().add(pos)
                 pathPoints.postValue(this)
@@ -243,9 +249,13 @@ class TrackingService : LifecycleService() {
         startForeground(NOTIFICATION_ID, baseNotificationBuilder.build())
 
         timeRunInSeconds.observe(this, Observer {
-            if(!serviceKilled) {
+            if (!serviceKilled) {
                 val notification = curNotificationBuilder
-                    .setContentText(TrackingUtility.getFormattedStopWatchTime(it * 1000L))
+                    .setContentText(
+                        TrackingUtility.getFormattedStopWatchTime(
+                            it * 1000L
+                        )
+                    )
                 notificationManager.notify(NOTIFICATION_ID, notification.build())
             }
         })
@@ -261,17 +271,3 @@ class TrackingService : LifecycleService() {
         notificationManager.createNotificationChannel(channel)
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

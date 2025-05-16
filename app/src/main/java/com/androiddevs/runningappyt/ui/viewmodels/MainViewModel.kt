@@ -1,18 +1,21 @@
 package com.androiddevs.runningappyt.ui.viewmodels
 
-import androidx.hilt.lifecycle.ViewModelInject
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.androiddevs.runningappyt.db.Run
 import com.androiddevs.runningappyt.other.SortType
 import com.androiddevs.runningappyt.repositories.MainRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-class MainViewModel @ViewModelInject constructor(
-    val mainRepository: MainRepository
-): ViewModel() {
+@HiltViewModel
+class MainViewModel @Inject constructor(
+    private val mainRepository: MainRepository
+) : ViewModel() {
 
     private val runsSortedByDate = mainRepository.getAllRunsSortedByDate()
     private val runsSortedByDistance = mainRepository.getAllRunsSortedByDistance()
